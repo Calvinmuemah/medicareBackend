@@ -2,17 +2,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../Models/UserModels');
 
-// Predefined role emails
+// Predefined role emails (can be moved to constants.js)
 const ADMIN_EMAILS = ['kasera@gmail.com'];
 const DOCTOR_EMAILS = ['juma@gmail.com'];
 
-//  Generate JWT Token
+// Generate JWT Token
 const generateToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-//  Register New User
-// POST /api/users/register
+// Register User
 const registerUser = async (req, res) => {
   try {
     const { name, email, phone, password, password2 } = req.body;
@@ -23,24 +22,19 @@ const registerUser = async (req, res) => {
 
     const newEmail = email.toLowerCase();
 
-    // Check if email already exists
-    const emailExists = await User.findOne({ email: newEmail });
-    if (emailExists) {
+    if (await User.findOne({ email: newEmail })) {
       return res.status(422).json({ message: 'Email already exists' });
     }
 
-    // Check if phone exists if provided
     if (phone) {
-      const phoneExists = await User.findOne({ phone });
-      if (phoneExists) {
-        return res.status(422).json({ message: 'Phone number already in use' });
-      }
       if (!/^\d{10}$/.test(phone)) {
-        return res.status(422).json({ message: 'Phone number must be exactly 10 digits' });
+        return res.status(422).json({ message: 'Phone must be 10 digits' });
+      }
+      if (await User.findOne({ phone })) {
+        return res.status(422).json({ message: 'Phone already in use' });
       }
     }
 
-    // Validate password
     if (password.length < 6) {
       return res.status(422).json({ message: 'Password must be at least 6 characters' });
     }
@@ -49,16 +43,12 @@ const registerUser = async (req, res) => {
       return res.status(422).json({ message: 'Passwords do not match' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Determine roles
     const isAdmin = ADMIN_EMAILS.includes(newEmail);
     const isDoctor = DOCTOR_EMAILS.includes(newEmail);
 
-    // Create user
-    await User.create({
+    const newUser = await User.create({
       name,
       email: newEmail,
       phone: phone || null,
@@ -67,35 +57,24 @@ const registerUser = async (req, res) => {
       isDoctor,
     });
 
-    res.status(201).json({ message: `User ${name} registered successfully.` });
+    res.status(201).json({ message: `User ${newUser.name} registered successfully.` });
 
-  } catch (error) {
-    console.error('Register Error:', error.message);
-    res.status(500).json({ message: 'User registration failed. Please try again.' });
+  } catch (err) {
+    console.error('Register Error:', err.message);
+    res.status(500).json({ message: 'Registration failed' });
   }
 };
 
-// 🔓 Login User
-// POST /api/users/login
+// Login User & Set Cookie
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(422).json({ message: 'Please fill in all fields' });
-    }
-
-    const newEmail = email.toLowerCase();
-    const user = await User.findOne({ email: newEmail });
-
-    if (!user) {
-      return res.status(422).json({ message: 'Invalid credentials' });
-    }
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(422).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(422).json({ message: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(422).json({ message: 'Invalid credentials' });
 
     const token = generateToken({
       id: user._id,
@@ -103,9 +82,15 @@ const loginUser = async (req, res) => {
       isDoctor: user.isDoctor,
     });
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       message: 'Login successful',
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -116,27 +101,64 @@ const loginUser = async (req, res) => {
       },
     });
 
-  } catch (error) {
-    console.error('Login Error:', error.message);
-    res.status(500).json({ message: 'Login failed. Please try again later.' });
+  } catch (err) {
+    console.error('Login Error:', err.message);
+    res.status(500).json({ message: 'Login failed' });
   }
 };
 
-// 👤 Get Single User by ID for Admin to get ALl  the single user 
-// GET /api/users/:id
+// Get User by ID
 const getUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const user = await User.findById(id).select('-password');
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error('Get User Error:', err.message);
+    res.status(500).json({ message: 'Could not fetch user' });
+  }
+};
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+// Update Profile (Name, Phone)
+const updateProfile = async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (name) user.name = name;
+    if (phone) {
+      if (!/^\d{10}$/.test(phone)) {
+        return res.status(422).json({ message: 'Phone must be 10 digits' });
+      }
+      user.phone = phone;
     }
 
-    res.json(user);
-  } catch (error) {
-    console.error('Get User Error:', error.message);
-    res.status(500).json({ message: 'Failed to get user' });
+    await user.save();
+    res.json({ message: "Profile updated", user });
+  } catch (err) {
+    console.error('Update Error:', err.message);
+    res.status(500).json({ message: 'Could not update profile' });
+  }
+};
+
+// Reset Password
+const resetPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id);
+
+    const match = await bcrypt.compare(oldPassword, user.password);
+    if (!match) {
+      return res.status(422).json({ message: 'Old password is incorrect' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Reset Password Error:', err.message);
+    res.status(500).json({ message: 'Password update failed' });
   }
 };
 
@@ -144,4 +166,6 @@ module.exports = {
   registerUser,
   loginUser,
   getUser,
+  updateProfile,
+  resetPassword,
 };
