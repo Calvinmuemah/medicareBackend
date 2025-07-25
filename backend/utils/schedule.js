@@ -7,7 +7,7 @@ const logService = require('../services/log.service');
 const User = require('../models/User');
 
 const scheduleReminders = () => {
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('*/14 * * * *', async () => {
     console.log(' Running scheduled reminder check...');
 
     try {

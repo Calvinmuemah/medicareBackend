@@ -75,6 +75,7 @@ POST /api/v1/auth/register
     "role": "superadmin"
 }
 Onboard a Hospital (as Super Admin):
+_id of the created hospital.Note The ID 
 POST /api/v1/hospitals
 {
     "name": "Central Maternity Clinic",
