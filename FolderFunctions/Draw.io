@@ -63,3 +63,72 @@
 ├── server.js                  # Entry point to start the server and connect to DB
 ├── package.json               # Project dependencies and scripts
 └── README.md                  # Project documentation
+
+
+TEST DATA FOR SIMULATIONS  AND POST MAN OR THUNDER CLINET 
+Register a Super Admin:
+POST /api/v1/auth/register
+{
+    "name": "Juma",
+    "email": "juma@gmail.com",
+    "password": "juma123456789",
+    "role": "superadmin"
+}
+Onboard a Hospital (as Super Admin):
+POST /api/v1/hospitals
+{
+    "name": "Central Maternity Clinic",
+    "address": "123 Main St, Nairobi",
+    "phone": "0712345678",
+    "email": "central@gmail.com",
+    "description": "A leading maternity clinic for patients ."
+}
+Add a Hospital Admin (as Super Admin):
+POST /api/v1/hospitals/HOSPITAL_ID_FROM_STEP_4/admin
+{
+    "name": "kasera",
+    "email": "kasera@gmail.com",
+    "password": "kasera123456789"
+}
+
+Login as Hospital Admin:
+POST /api/v1/auth/login
+{
+    "email": "kasera@gmail.com.com",
+    "password": "kasera123456789"
+}
+
+Add Staff (as Hospital Admin):
+POST /api/v1/hospitals/HOSPITAL_ID_FROM_STEP_4/staff
+{
+    "name": "Dr. calvo",
+    "email": "calvo@gmail.com",
+    "password": "calvo123456789",
+    "specialty": "Obstetrician"
+}
+Login as Staff:
+POST /api/v1/auth/login
+{
+    "email": "calvo@gmail.com",
+    "password": "calvo123456789"
+}
+Register Patient (as Staff):
+POST /api/v1/patients
+{
+    "name": "Mary Patient",
+    "email": "mary@gmail.com",
+    "password": "mary123456789",
+    "dateOfBirth": "1990-05-15",
+    "edd": "2025-12-25",
+    "emergencyContactName": "John Doe",
+    "emergencyContactPhone": "0722112233",
+    "bloodGroup": "O+"
+}
+Create Appointment (as Staff):
+POST /api/v1/appointments
+{
+    "patientId": "PATIENT_ID_FROM_STEP_9",
+    "date": "2025-08-01T10:00:00Z",
+    "type": "Antenatal Checkup",
+    "notes": "First antenatal visit."
+}

@@ -1,21 +1,21 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('./config/db');
-const userRoutes = require("./Routes/userRoutes");
-
-const app = express();
-app.use(express.json());
-app.use(require('cors')());
-app.use("/v1/api",userRoutes)
-
-
-
-
-const PORT = process.env.PORT;
-app.listen(PORT,async()=>{
-    try {
-        console.log(`Server running on port ${PORT}`)
-    } catch (error) {
-        
-    }
-})
+// server.js
+const app = require("./app");
+const { connectDB, configureCloudinary } = require("./config");
+const { scheduleReminders } = require("./utils/schedule");
+const { scheduleHealthTips } = require("./services/tip.service");
+// Connect to DB
+connectDB();
+// Cloudinary config
+configureCloudinary();
+// Start CRON jobs or schedulers
+scheduleReminders();
+scheduleHealthTips();
+const PORT = process.env.PORT || 5000;
+const server = app.listen(PORT, () =>
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
+);
+// Graceful shutdown on unhandled promise rejection
+process.on("unhandledRejection", (err, promise) => {
+  console.error(`Unhandled Rejection: ${err.message}`);
+  server.close(() => process.exit(1));
+});
