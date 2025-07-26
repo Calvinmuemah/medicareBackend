@@ -7,20 +7,13 @@ const ErrorResponse = require('../utils/errorResponse');
 const { USER_ROLES } = require('../utils/constants');
 const logService = require('../services/log.service');
 
-// Generate JWT and send it via cookie + response
+// Generate JWT and send it via response only (no cookies)
 const sendTokenResponse = (user, statusCode, res) => {
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_LIFETIME,
   });
 
-  const cookieOptions = {
-    expires: new Date(Date.now() + process.env.JWT_LIFETIME * 24 * 60 * 60 * 1000),
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Lax',
-  };
-
-  res.status(statusCode).cookie('token', token, cookieOptions).json({
+  res.status(statusCode).json({
     success: true,
     token,
     user: {
@@ -51,7 +44,6 @@ exports.register = async (req, res, next) => {
   } = req.body;
 
   try {
-    // Basic validation
     if (!name || !email || !password || !role) {
       return next(new ErrorResponse('Name, email, password, and role are required', 400));
     }
@@ -60,7 +52,6 @@ exports.register = async (req, res, next) => {
       return next(new ErrorResponse('Password must be at least 6 characters', 400));
     }
 
-    // Validate hospital if not superadmin
     let hospital = null;
     if (role !== USER_ROLES.SUPER_ADMIN) {
       if (!hospitalId) {
@@ -73,7 +64,11 @@ exports.register = async (req, res, next) => {
       }
     }
 
-    // Create user
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return next(new ErrorResponse('Email already exists', 400));
+    }
+
     const user = await User.create({
       name,
       email,
@@ -83,7 +78,6 @@ exports.register = async (req, res, next) => {
       specialty: role === USER_ROLES.STAFF ? specialty : undefined,
     });
 
-    // Create patient record if role is patient
     if (role === USER_ROLES.PATIENT) {
       if (!dateOfBirth || !edd || !emergencyContactName || !emergencyContactPhone) {
         return next(new ErrorResponse('Patient details (DOB, EDD, emergency contact) are required', 400));
@@ -151,17 +145,11 @@ exports.getMe = async (req, res, next) => {
   }
 };
 
-// @desc    Logout user and clear token cookie
+// @desc    Logout user
 // @route   GET /api/v1/auth/logout
 // @access  Private
 exports.logout = async (req, res, next) => {
   await logService.logActivity(req.user._id, req.user.role, 'Logged out', 'Auth', req.user._id);
 
-  res.cookie('token', 'none', {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
-    sameSite: 'Lax',
-  });
-
-  res.status(200).json({ success: true, data: {} });
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
 };

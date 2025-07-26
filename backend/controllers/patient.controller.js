@@ -7,6 +7,7 @@ const logService = require('../services/log.service');
 // --- Register a New Patient ---
 // @route   POST /api/v1/patients
 // @access  Private (Staff only)
+
 exports.registerPatient = async (req, res, next) => {
   const {
     name, email, password, dateOfBirth, edd,
@@ -16,6 +17,16 @@ exports.registerPatient = async (req, res, next) => {
   try {
     if (req.user.role !== USER_ROLES.STAFF) {
       return next(new ErrorResponse('Only staff members can register new patients', 403));
+    }
+    const VALID_BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    // Validate blood group
+    if (!VALID_BLOOD_GROUPS.includes(bloodGroup)) {
+      return next(new ErrorResponse('Invalid blood group provided', 400));
+    }
+
+    // Validate phone number (exactly 10 digits)
+    if (!/^\d{10}$/.test(emergencyContactPhone)) {
+      return next(new ErrorResponse('Emergency contact phone must be exactly 10 digits', 400));
     }
 
     const existingUser = await User.findOne({ email });
