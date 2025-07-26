@@ -10,9 +10,9 @@ configureCloudinary();
 // Start CRON jobs or schedulers
 scheduleReminders();
 scheduleHealthTips();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT 
 const server = app.listen(PORT, () =>
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
+  console.log(`Server running in  ${PORT}`)
 );
 // Graceful shutdown on unhandled promise rejection
 process.on("unhandledRejection", (err, promise) => {

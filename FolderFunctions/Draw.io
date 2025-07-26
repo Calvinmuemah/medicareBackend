@@ -88,14 +88,14 @@ Add a Hospital Admin (as Super Admin):
 POST /api/v1/hospitals/HOSPITAL_ID_FROM_STEP_4/admin
 {
     "name": "kasera",
-    "email": "kasera@gmail.com",
+    "email": "omar@gmail.com",
     "password": "kasera123456789"
 }
 
 Login as Hospital Admin:
 POST /api/v1/auth/login
 {
-    "email": "kasera@gmail.com.com",
+    "email": "omar@gmail.com.com",
     "password": "kasera123456789"
 }
 
