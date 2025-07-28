@@ -3,38 +3,36 @@ const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const { USER_ROLES } = require('../utils/constants');
 const logService = require('../services/log.service');
+const notificationService = require('../services/notification.service')
+const { generateRandomPassword } = require('../utils/passwordGenerator');
 
 // --- Register a New Patient ---
 // @route   POST /api/v1/patients
 // @access  Private (Staff only)
-
 exports.registerPatient = async (req, res, next) => {
   const {
-    name, // User's name for the User model
+    name, // This will be the user's name for the User model, typically the patient's full name
     email,
-    password,
+    // password - REMOVED from destructuring; we will generate it
     // Patient-specific details from the schema
-    fullName,
-    phoneNumber,
+    fullName, // Patient's actual full name as per schema
+    phoneNumber, // Patient's primary contact phone number
     nationalIdClinicId,
-    dateOfBirth, // Existing field
-    bloodGroup, // Existing field
+    dateOfBirth,
+    bloodGroup,
     maritalStatus,
     nextOfKinName,
     nextOfKinContact,
     locationVillage,
     languagePreference,
-    // dateOfFirstVisit is auto-defaulted by schema, can be overridden
     pregnancyStatus,
-    lmp, // Last Menstrual Period - Required for EDD calculation
-    // edd is auto-calculated by schema pre-save hook, no need to pass from body
+    lmp,
     gravida,
     parity,
     knownConditions,
     allergies,
-    // latestVitals are typically updated separately or after initial registration
-    emergencyContactName, // Existing field
-    emergencyContactPhone, // Existing field
+    emergencyContactName,
+    emergencyContactPhone,
   } = req.body;
 
   try {
@@ -43,17 +41,19 @@ exports.registerPatient = async (req, res, next) => {
       return next(new ErrorResponse('Only staff members can register new patients', 403));
     }
 
-    // --- Validation for new fields ---
+    // --- Validation for fields ---
     if (!fullName) {
       return next(new ErrorResponse('Please provide the patient\'s full name', 400));
     }
     if (!phoneNumber) {
       return next(new ErrorResponse('Please provide the patient\'s phone number', 400));
     }
-    // Validate phone number (e.g., 10 digits for general purpose, or specific regex for Kenyan numbers)
-    // Assuming phoneNumber is the main contact, and emergencyContactPhone is separate
-    if (!/^\d{10,}$/.test(phoneNumber)) { // At least 10 digits
+    // Basic phone number validation (at least 10 digits)
+    if (!/^\d{10,}$/.test(phoneNumber)) {
       return next(new ErrorResponse('Patient phone number must be at least 10 digits', 400));
+    }
+    if (!email) { // Ensure email is provided if we're sending email notifications
+      return next(new ErrorResponse('Please provide the patient\'s email address', 400));
     }
     if (!maritalStatus) {
       return next(new ErrorResponse('Please provide the patient\'s marital status', 400));
@@ -74,14 +74,13 @@ exports.registerPatient = async (req, res, next) => {
       return next(new ErrorResponse('Please provide the Last Menstrual Period (LMP)', 400));
     }
 
-    // Validate blood group (existing validation)
     const VALID_BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
     if (bloodGroup && !VALID_BLOOD_GROUPS.includes(bloodGroup)) {
       return next(new ErrorResponse('Invalid blood group provided', 400));
     }
 
-    // Validate emergency contact phone number (existing validation)
-    if (!/^\d{10,}$/.test(emergencyContactPhone)) { // At least 10 digits
+    // Emergency contact phone validation (at least 10 digits)
+    if (emergencyContactPhone && !/^\d{10,}$/.test(emergencyContactPhone)) {
       return next(new ErrorResponse('Emergency contact phone must be at least 10 digits', 400));
     }
 
@@ -91,21 +90,25 @@ exports.registerPatient = async (req, res, next) => {
       return next(new ErrorResponse(`User with email '${email}' already exists`, 400));
     }
 
+    // --- Generate a temporary password ---
+    const tempPassword = generateRandomPassword(); // Default length is 12
+
     // Create the patient's user account
     const patientUser = await User.create({
-      name,
+      name: fullName, // Use patient's fullName for the User's name
       email,
-      password,
+      password: tempPassword, // User model's pre-save hook will hash this
       role: USER_ROLES.PATIENT,
-      hospital: req.user.hospital, // Assign to the hospital of the registering staff
+      hospital: req.user.hospital,
+      // Consider adding `passwordResetRequired: true` to force password change on first login
+      // passwordResetRequired: true,
     });
 
     // Create the patient profile with all details
     const patient = await Patient.create({
       user: patientUser._id,
       hospital: req.user.hospital,
-      registeredBy: req.user._id, // The staff member who registered
-      // Personal Details
+      registeredBy: req.user._id,
       fullName,
       phoneNumber,
       nationalIdClinicId,
@@ -118,33 +121,64 @@ exports.registerPatient = async (req, res, next) => {
       nextOfKinContact,
       locationVillage,
       languagePreference,
-      // dateOfFirstVisit will default to Date.now() if not provided
       pregnancyStatus,
-      // Health Information
       lmp,
-      // edd will be auto-calculated by the PatientSchema pre-save hook
       gravida,
       parity,
       knownConditions,
       allergies,
-      // latestVitals are not set at registration, but can be updated later
     });
+
+    // --- Send the temporary password to the patient via Email and SMS ---
+    const subject = 'Welcome to MHAAS! Your Account Details';
+    const emailBody = `Dear ${fullName},
+
+Welcome to the MHAAS system!
+
+Your account has been successfully created.
+Here are your login details:
+  - Email: ${email}
+  - Temporary Password: ${tempPassword}
+
+Please log in at [Your_Login_URL_Here] and change your password immediately for security reasons.
+
+If you have any questions, please do not hesitate to contact us.
+
+Sincerely,
+The MHAAS Team`;
+
+    const smsBody = `Welcome to MHAAS, ${fullName}! Your temporary password is: ${tempPassword}. Please login at [Your_Login_URL_Here] and change it.`;
+
+    // Attempt to send email
+    const emailResult = await notificationService.sendEmail(email, subject, emailBody);
+    if (!emailResult.success) {
+      console.error(`[Patient Controller] Failed to send email: ${emailResult.message}`);
+      // Decide if this error should block registration or just be logged
+    }
+
+    // Attempt to send SMS
+    const smsResult = await notificationService.sendSMS(phoneNumber, smsBody);
+    if (!smsResult.success) {
+      console.error(`[Patient Controller] Failed to send SMS: ${smsResult.message}`);
+      // Decide if this error should block registration or just be logged
+    }
 
     // Log the activity
     await logService.logActivity(
       req.user._id,
       req.user.role,
-      `Registered new patient: ${patientUser.name} (ID: ${patient._id})`,
+      `Registered new patient: ${patientUser.name} (ID: ${patient._id}) and sent temporary password.`,
       'Patient',
       patient._id
     );
 
     res.status(201).json({
       success: true,
+      message: 'Patient registered successfully and temporary password sent to their email/phone.',
       data: { patientUser, patient },
     });
   } catch (error) {
-    console.error('Error registering patient:', error); // Log the detailed error
+    console.error('Error registering patient:', error);
     next(error);
   }
 };
