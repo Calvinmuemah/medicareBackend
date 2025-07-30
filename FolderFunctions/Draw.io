@@ -133,3 +133,6 @@ POST /api/v1/appointments
     "type": "Antenatal Checkup",
     "notes": "First antenatal visit."
 }
+
+
+
