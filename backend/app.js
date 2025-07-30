@@ -25,7 +25,7 @@ const logs = require("./routes/logs.routes");
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:3000", // Add your frontend URL here ni god manze....
+  "http://localhost:5173/l", // Add your frontend URL here ni god manze....
   "https://smartdarofronted.vercel.app", // If you have a live domain, add it here
 ];
 
