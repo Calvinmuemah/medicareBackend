@@ -85,6 +85,7 @@ The MHAAS Team`;
 // @desc    Add a hospital admin for a hospital
 // @route   POST /api/v1/hospitals/:hospitalId/admin
 // @access  Private (Super Admin only)
+
 exports.addHospitalAdmin = async (req, res, next) => {
   const { hospitalId } = req.params;
   const { name, email, phoneNumber } = req.body; // Removed 'password', added 'phoneNumber'
