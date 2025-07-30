@@ -20,6 +20,10 @@ const visits = require('./routes/visit.routes');
 const healthTips = require('./routes/healthTip.routes');
 const submissions = require('./routes/submission.routes');
 const logs = require('./routes/logs.routes');
+// IOT And AI Routes
+const iotRoutes = require("./routes/iotRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
@@ -43,6 +47,12 @@ app.use('/api/v1/visits', visits);
 app.use('/api/v1/healthtips', healthTips);
 app.use('/api/v1/submissions', submissions);
 app.use('/api/v1/logs', logs);
+
+// IOT & AI routes
+app.use("/api", iotRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api", require("./routes/chatRoutes"));
 
 // Error Handler
 app.use(errorHandler);

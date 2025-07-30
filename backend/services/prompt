@@ -1,0 +1,194 @@
+hello, uh. build a fronted side for a hospital management system website, So I already have backend endpoints with me. So in the code, put places to put backend endpoints. I have all so in this hospital management system we have 4 levels of administration so we have the super admin the super admin manages all the hospitals registered under the system. that is, he can add an hospital, he can delete hospital he can update and do anything to a  certain hospital. apart from super admin. We also have hospital admin.he is the admin of a certain hospital so admin of a certain hospital manages the whole operations in a hospital So for example, he can manage staffs, staffs are for example doctor's, nurses and all the Hospital Staffs so he can also view all operations of the hospital eg he can see all the patients registered under that hospital so under hospital admin we also have Staffs, as I said earlier staff is like a doctor and so staff can manage a patient so stuff can add a new patient, can delete a new patient can view all the Metrics of a patient.The work of a staff is to manage all operations of a patient eg can view patient details. Now lastly we have patience. So in patient a patient can view his metrics from iot so, he can view his temperature and  can view his heartbeats. Can see his history that is the history of his metrics. You can see you can view them. person can also speak with AI. There will be a patient can speak with the AI directly. Also a patient can book appointment to hospital, the staff can see all the appointment made. So the hospital will be able to view all the appointments made. made by his patients so also use good colors for the UI and make 4 different dashboards. So for example the dashboard for a patient will look different. depending on the levels and what they do. so also, I'm using react vite and bootstrap for styling . also these all peapols will have no register pages they will only have one login page.the super admincreates a hospital admin and the login credentials are sent to his email.and this happent to the hospital staff and a patient, So there will beonly one login. There will be no register page. So if the person logs in he will be directed to his dashboard depending on his level of administration. So the super admin will have a dashboard for super admin, the hospital admin will have a dashboard for hospital admin, the staff will have a dashboard for staff and the patient will have a dashboard for patient. So I want you to build this frontend side using react vite and bootstrap. And also use the backend endpoints that I have given you. And also make sure that you put comments in the code so that I can understand what you are doing. Thank you. this is all enpoints that I have for you. So you can use them in the code.<// app.js
+const express = require('express');
+const dotenv = require('dotenv');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+const errorHandler = require('./middlewares/error.middleware');
+
+// Load environment variables
+dotenv.config({ path: './.env' });
+
+// Route files
+const auth = require('./routes/auth.routes');
+const hospitals = require('./routes/hospital.routes');
+const users = require('./routes/user.routes');
+const staff = require('./routes/staff.routes');
+const patients = require('./routes/patient.routes');
+const appointments = require('./routes/appointment.routes');
+const reminders = require('./routes/reminder.routes');
+const visits = require('./routes/visit.routes');
+const healthTips = require('./routes/healthTip.routes');
+const submissions = require('./routes/submission.routes');
+const logs = require('./routes/logs.routes');
+// IOT And AI Routes
+const iotRoutes = require("./routes/iotRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
+
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Mount routes
+app.use('/api/v1/auth', auth);
+app.use('/api/v1/hospitals', hospitals);
+app.use('/api/v1/users', users);
+app.use('/api/v1/staff', staff);
+app.use('/api/v1/patients', patients);
+app.use('/api/v1/appointments', appointments);
+app.use('/api/v1/reminders', reminders);
+app.use('/api/v1/visits', visits);
+app.use('/api/v1/healthtips', healthTips);
+app.use('/api/v1/submissions', submissions);
+app.use('/api/v1/logs', logs);
+
+// IOT & AI routes
+app.use("/api", iotRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/chat", chatRoutes);
+
+// Error Handler
+app.use(errorHandler);
+
+module.exports = app;
+> eg...< config/
+│   ├── db.js                  # MongoDB connection setup
+│   ├── cloudinary.js          # Cloudinary config (for uploads, currently a placeholder)
+│   └── index.js               # Centralizes all configuration exports
+│
+├── controllers/
+│   ├── auth.controller.js     # Handles user registration and login
+│   ├── hospital.controller.js # Manages hospital and hospital admin creation
+│   ├── user.controller.js     # General user management (e.g., view all users)
+│   ├── staff.controller.js    # Manages hospital staff (doctors, nurses)
+│   ├── patient.controller.js  # Handles patient registration, visits, appointments
+│   ├── appointment.controller.js # Manages appointments
+│   ├── reminder.controller.js # Manages sending reminders
+│   ├── visit.controller.js    # Manages patient visits
+│   ├── healthTip.controller.js # Manages health tips
+│   └── submission.controller.js # Handles patient audio/text submissions
+│   └── logs.controller.js     # Manages activity logs
+│
+├── models/
+│   ├── User.js                # Mongoose schema for all user roles (Super Admin, Hospital Admin, Staff, Patient)
+│   ├── Hospital.js            # Mongoose schema for hospitals
+│   ├── Patient.js             # Mongoose schema for patients
+│   ├── Appointment.js         # Mongoose schema for appointments
+│   ├── Visit.js               # Mongoose schema for visits
+│   ├── Reminder.js            # Mongoose schema for reminders
+│   ├── HealthTip.js           # Mongoose schema for health tips
+│   ├── Log.js                 # Mongoose schema for activity logs
+│   └── Submission.js          # Mongoose schema for patient audio/text submissions
+│
+├── routes/
+│   ├── auth.routes.js         # Routes for authentication (register, login)
+│   ├── hospital.routes.js     # Routes for hospital and hospital admin management
+│   ├── user.routes.js         # General user routes
+│   ├── staff.routes.js        # Routes for staff management
+│   ├── patient.routes.js      # Routes for patient management
+│   ├── appointment.routes.js  # Routes for appointment management
+│   ├── reminder.routes.js     # Routes for reminder management
+│   ├── visit.routes.js        # Routes for visit management
+│   ├── healthTip.routes.js    # Routes for health tip management
+│   ├── submission.routes.js   # Routes for patient submissions
+│   └── logs.routes.js         # Routes for activity logs
+│
+├── middlewares/
+│   ├── auth.middleware.js     # Middleware for JWT authentication
+│   ├── role.middleware.js     # Middleware for role-based access control (RBAC)
+│   ├── error.middleware.js    # Centralized error handling middleware
+│   └── validate.middleware.js # Placeholder for input validation middleware
+│
+├── services/
+│   ├── notification.service.js # Service for sending SMS/Email reminders (placeholder)
+│   ├── tip.service.js         # Service for managing and scheduling health tips (placeholder)
+│   └── log.service.js         # Service for logging user activities
+│
+├── utils/
+│   ├── token.js               # Utility for JWT token generation and verification
+│   ├── validators.js          # Utility for basic input validation
+│   ├── constants.js           # Defines application-wide constants (e.g., user roles)
+│   └── schedule.js            # Utility for scheduling automated tasks (e.g., reminders)
+│
+├── .env                       # Environment variables
+├── .gitignore                 # Files/directories to ignore in Git
+├── app.js                     # Main Express application setup
+├── server.js                  # Entry point to start the server and connect to DB
+├── package.json               # Project dependencies and scripts
+└── README.md                  # Project documentation
+
+
+TEST DATA FOR SIMULATIONS  AND POST MAN OR THUNDER CLINET 
+Register a Super Admin:
+POST /api/v1/auth/register
+{
+    "name": "Juma",
+    "email": "juma@gmail.com",
+    "password": "juma123456789",
+    "role": "superadmin"
+}
+Onboard a Hospital (as Super Admin):
+_id of the created hospital.Note The ID 
+POST /api/v1/hospitals
+{
+    "name": "Central Maternity Clinic",
+    "address": "123 Main St, Nairobi",
+    "phone": "0712345678",
+    "email": "central@gmail.com",
+    "description": "A leading maternity clinic for patients ."
+}
+Add a Hospital Admin (as Super Admin):
+POST /api/v1/hospitals/HOSPITAL_ID_FROM_STEP_4/admin
+{
+    "name": "kasera",
+    "email": "omar@gmail.com",
+    "password": "kasera123456789"
+}
+
+Login as Hospital Admin:
+POST /api/v1/auth/login
+{
+    "email": "omar@gmail.com.com",
+    "password": "kasera123456789"
+}
+
+Add Staff (as Hospital Admin):
+POST /api/v1/hospitals/HOSPITAL_ID_FROM_STEP_4/staff
+{
+    "name": "Dr. calvo",
+    "email": "calvo@gmail.com",
+    "password": "calvo123456789",
+    "specialty": "Obstetrician"
+}
+Login as Staff:
+POST /api/v1/auth/login
+{
+    "email": "calvo@gmail.com",
+    "password": "calvo123456789"
+}
+Register Patient (as Staff):
+POST /api/v1/patients
+{
+    "name": "Mary Patient",
+    "email": "mary@gmail.com",
+    "password": "mary123456789",
+    "dateOfBirth": "1990-05-15",
+    "edd": "2025-12-25",
+    "emergencyContactName": "John Doe",
+    "emergencyContactPhone": "0722112233",
+    "bloodGroup": "O+"
+}
+Create Appointment (as Staff):
+POST /api/v1/appointments
+{
+    "patientId": "PATIENT_ID_FROM_STEP_9",
+    "date": "2025-08-01T10:00:00Z",
+    "type": "Antenatal Checkup",
+    "notes": "First antenatal visit."
+}>
