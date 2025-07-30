@@ -89,15 +89,36 @@ Here are some example API endpoints that the system will expose:
 * `POST /api/v1/patients/:patientId/visits` - Create a new visit for a patient
 * `POST /api/v1/appointments` - Create a new appointment
 * `POST /api/v1/reminders` - Send a reminder to a patient
+ ### Patient Actions
+| Method | Endpoint                                    | Description                           |
+| ------ | ------------------------------------------- | ------------------------------------- |
+| `GET`  | `/api/v1/appointments`                      | Patient views all their appointments  |
+| `GET`  | `/api/v1/appointments/:id`                  | View specific appointment details     |
+| `GET`  | `/api/v1/visits/patients/:patientId/visits` | Patient views all their visit records |
+| `GET`  | `/api/v1/visits/:id`                        | Patient views specific visit record   |
 
-### Patient Actions
-* `GET /api/v1/me/appointments` - Patient views their appointments
-* `GET /api/v1/me/visits` - Patient views their visit schedule
-* `POST /api/v1/me/submit` - Patient submits an audio/text record
-* `GET /api/v1/me/healthtips` - Patient views health tips
+###  Health Tips
+
+| Method | Endpoint                 | Description                |
+| ------ | ------------------------ | -------------------------- |
+| `GET`  | `/api/v1/healthtips`     | View all health tips       |
+| `GET`  | `/api/v1/healthtips/:id` | View a specific health tip |
+
+
+### Submissions
+| Method | Endpoint                             | Description                        |
+| ------ | ------------------------------------ | ---------------------------------- |
+| `POST` | `/api/v1/submissions/me/submit`      | Submit audio or text health record |
+| `GET`  | `/api/v1/submissions/me/submissions` | View personal submissions          |
+| `GET`  | `/api/v1/submissions/:id`            | View a specific submission         |
+
+
+
+
+
 
 ## Folder Structure
-
+ips
 Refer to the `MHAAS Project Structure Overview` document for a detailed breakdown of the folder structure.
 
 ## Contributing
@@ -107,3 +128,8 @@ Feel free to fork the repository, make improvements, and submit pull requests.
 ## License
 
 This project is licensed under the ISC License.
+
+
+
+
+
