@@ -29,6 +29,7 @@ const allowedOrigins = [
   "http://localhost:5173", 
   "https://mhaas.vercel.app",
   "http://localhost:8080",
+  "http://localhost:8081/",
   // Add your frontend URL here ni god manze....
   "https://smartdarofronted.vercel.app", // If you have a live domain, add it here
 ];
