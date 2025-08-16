@@ -33,6 +33,7 @@ exports.sendEmail = async (email, subject, body) => {
 };
 
 // --- SMS ---
+
 exports.sendSMS = async (phoneNumber, message) => {
   try {
     const sms = africastalking.SMS;
